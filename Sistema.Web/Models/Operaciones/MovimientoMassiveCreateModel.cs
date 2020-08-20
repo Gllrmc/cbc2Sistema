@@ -12,7 +12,7 @@ namespace Sistema.Web.Models.Operaciones
         public int[] empresaId { get; set; }
         [Required]
         public int[] loteId { get; set; }
-        public int?[] asientoId { get; set; }
+        public int?[] asientoId { get; set; } 
         [Required]
         public string[] origen { get; set; }
         [Required]
