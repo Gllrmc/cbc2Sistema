@@ -21,6 +21,8 @@ namespace Sistema.Entidades.Usuarios
         public byte[] password_hash { get; set; }
         [Required]
         public byte[] password_salt { get; set; }
+        [Required]
+        public bool pxch { get; set; }
         public int  iduseralta { get; set; }
         public DateTime fecalta { get; set; }
         public int iduserumod { get; set; }

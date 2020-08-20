@@ -14,7 +14,7 @@ using Sistema.Web.Models.Operaciones;
 
 namespace Sistema.Web.Controllers
 {
-    [Authorize(Roles = "Administrador,JefeAdministracion,AsistAdministracion")]
+    //[Authorize(Roles = "Administrador,JefeAdministracion,AsistAdministracion")]
     [Route("api/[controller]")]
     [ApiController]
     public class MovimientosController : ControllerBase
@@ -42,6 +42,102 @@ namespace Sistema.Web.Controllers
             {
                 Id = a.Id,
                 empresaId= a.empresaId,
+                empresa = a.empresa.nombre,
+                loteId = a.loteId,
+                aniomes = a.lote.anio + "/" + a.lote.mes,
+                asocuenta = a.lote.asocuenta.descripcion,
+                asientoId = a.asientoId,
+                origen = a.origen,
+                grpconceptoId = a.grpconceptoId,
+                grpconcepto = a.grpconcepto.nombre,
+                concepto = a.concepto,
+                fecha = a.fecha,
+                importe = a.importe,
+                unsgimporte = Math.Abs(a.importe),
+                ref0 = a.ref0,
+                ref1 = a.ref1,
+                ref2 = a.ref2,
+                ref3 = a.ref3,
+                ref4 = a.ref4,
+                ref5 = a.ref5,
+                ref6 = a.ref6,
+                ref7 = a.ref7,
+                ref8 = a.ref8,
+                ref9 = a.ref9,
+                etlId = a.etlId,
+                iduseralta = a.iduseralta,
+                fecalta = a.fecalta,
+                iduserumod = a.iduserumod,
+                fecumod = a.fecumod,
+                activo = a.activo
+            });
+        }
+
+        // GET: api/Movimientos/Listarnoclote/1
+        [HttpGet("[action]/{id}")]
+        public async Task<IEnumerable<MovimientoViewModel>> Listarnoclote([FromRoute] int id)
+        {
+            var movimiento = await _context.Movimientos
+                .Where(a => a.loteId == id && a.asientoId == null)
+                .Include(a => a.empresa)
+                .Include(a => a.lote)
+                .ThenInclude(a => a.asocuenta)
+                .Include(a => a.asiento)
+                .Include(a => a.grpconcepto)
+                .ToListAsync();
+
+            return movimiento.Select(a => new MovimientoViewModel
+            {
+                Id = a.Id,
+                empresaId = a.empresaId,
+                empresa = a.empresa.nombre,
+                loteId = a.loteId,
+                aniomes = a.lote.anio + "/" + a.lote.mes,
+                asocuenta = a.lote.asocuenta.descripcion,
+                asientoId = a.asientoId,
+                origen = a.origen,
+                grpconceptoId = a.grpconceptoId,
+                grpconcepto = a.grpconcepto.nombre,
+                concepto = a.concepto,
+                fecha = a.fecha,
+                importe = a.importe,
+                unsgimporte = Math.Abs(a.importe),
+                ref0 = a.ref0,
+                ref1 = a.ref1,
+                ref2 = a.ref2,
+                ref3 = a.ref3,
+                ref4 = a.ref4,
+                ref5 = a.ref5,
+                ref6 = a.ref6,
+                ref7 = a.ref7,
+                ref8 = a.ref8,
+                ref9 = a.ref9,
+                etlId = a.etlId,
+                iduseralta = a.iduseralta,
+                fecalta = a.fecalta,
+                iduserumod = a.iduserumod,
+                fecumod = a.fecumod,
+                activo = a.activo
+            });
+        }
+
+        // GET: api/Movimientos/Listarconlote/1
+        [HttpGet("[action]/{id}")]
+        public async Task<IEnumerable<MovimientoViewModel>> Listarconlote([FromRoute] int id)
+        {
+            var movimiento = await _context.Movimientos
+                .Where(a => a.loteId == id && a.asientoId != null)
+                .Include(a => a.empresa)
+                .Include(a => a.lote)
+                .ThenInclude(a => a.asocuenta)
+                .Include(a => a.asiento)
+                .Include(a => a.grpconcepto)
+                .ToListAsync();
+
+            return movimiento.Select(a => new MovimientoViewModel
+            {
+                Id = a.Id,
+                empresaId = a.empresaId,
                 empresa = a.empresa.nombre,
                 loteId = a.loteId,
                 aniomes = a.lote.anio + "/" + a.lote.mes,
@@ -157,6 +253,128 @@ namespace Sistema.Web.Controllers
             return Ok();
         }
 
+        // PUT: api/Movimientos/Actualizarasiento
+        [HttpPut("[action]")]
+        public async Task<IActionResult> Actualizarasiento([FromBody] MovimientoMassiveUpdateModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (model.Id.Length == 0)
+            {
+                return BadRequest();
+            }
+
+            var fechaHora = DateTime.Now;
+            var numasiento = _context.Movimientos
+                .Select(p => p.asientoId)
+                .Max();
+            numasiento = numasiento.HasValue ? numasiento + 1 : 1;
+
+            var movimiento = await _context.Movimientos.Where(f=>model.Id.Contains(f.Id)).ToListAsync();
+            movimiento.ForEach(a => { a.asientoId = numasiento; a.iduserumod = model.iduserumod; a.fecumod = fechaHora; });
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Guardar Excepción
+                return BadRequest();
+            }
+
+            return Ok();
+        }
+
+        // PUT: api/Movimientos/Crearajuste
+        [HttpPut("[action]")]
+        public async Task<IActionResult> Crearajuste([FromBody] MovimientoAjusteModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (model.Id.Length == 0)
+            {
+                return BadRequest();
+            }
+
+            var fechaHora = DateTime.Now;
+            var numasiento = _context.Movimientos
+                .Select(p => p.asientoId)
+                .Max();
+            numasiento = numasiento.HasValue ? numasiento + 1 : 1;
+
+            var movimiento = await _context.Movimientos.Where(f => model.Id.Contains(f.Id)).ToListAsync();
+            movimiento.ForEach(a => { a.asientoId = numasiento; a.iduserumod = model.iduseralta; a.fecumod = fechaHora; });
+
+            Movimiento alta = new Movimiento
+            {
+                empresaId = model.empresaId,
+                loteId = model.loteId,
+                asientoId = numasiento,
+                origen = model.origen,
+                grpconceptoId = model.grpconceptoId,
+                concepto = model.concepto,
+                fecha = model.fecha,
+                importe = model.importe,
+                etlId = model.etlId,
+                iduseralta = model.iduseralta,
+                fecalta = fechaHora,
+                iduserumod = model.iduseralta,
+                fecumod = fechaHora,
+                activo = true
+            };
+
+            _context.Movimientos.Add(alta);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+
+            return Ok();
+        }
+
+        // PUT: api/Movimientos/Borrarasiento
+        [HttpPut("[action]")]
+        public async Task<IActionResult> Borrarasiento([FromBody] MovimientoMassiveBorrarModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (model.Id.Length == 0)
+            {
+                return BadRequest();
+            }
+
+            var fechaHora = DateTime.Now;
+            var baja = await _context.Movimientos.Where(f => model.Id.Contains(f.asientoId) && f.origen == "AJU" ).ToListAsync();
+            baja.ForEach( a => _context.Movimientos.Remove(a));
+
+            var movimiento = await _context.Movimientos.Where(f => model.Id.Contains(f.asientoId)).ToListAsync();
+            movimiento.ForEach(a => { a.asientoId = null; a.iduserumod = model.iduserumod; a.fecumod = fechaHora; });
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Guardar Excepción
+                return BadRequest();
+            }
+
+            return Ok();
+        }
+
         // POST: api/Movimientos/Crear
         [HttpPost("[action]")]
         public async Task<IActionResult> Crear([FromBody] MovimientoCreateModel model)
@@ -205,8 +423,65 @@ namespace Sistema.Web.Controllers
                 return BadRequest();
             }
 
+            return Ok(movimiento);
+        }
+
+        // POST: api/Movimientos/Crearapertura
+        [HttpPost("[action]")]
+        public async Task<IActionResult> Crearapertura([FromBody] MovimientoMassiveCreateModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var fechaHora = DateTime.Now;
+
+            for (var i=0; i<model.origen.Length; i++)
+                {
+                Movimiento movimiento = new Movimiento
+                {
+                    empresaId = model.empresaId[i],
+                    loteId = model.loteId[i],
+                    asientoId = model.asientoId[i],
+                    origen = model.origen[i],
+                    grpconceptoId = model.grpconceptoId[i],
+                    concepto = model.concepto[i],
+                    fecha = model.fecha[i],
+                    importe = model.importe[i],
+                    ref0 = model.ref0[i],
+                    ref1 = model.ref1[i],
+                    ref2 = model.ref2[i],
+                    ref3 = model.ref3[i],
+                    ref4 = model.ref4[i],
+                    ref5 = model.ref5[i],
+                    ref6 = model.ref6[i],
+                    ref7 = model.ref7[i],
+                    ref8 = model.ref8[i],
+                    ref9 = model.ref9[i],
+                    etlId = model.etlId,
+                    iduseralta = model.iduseralta,
+                    fecalta = fechaHora,
+                    iduserumod = model.iduseralta,
+                    fecumod = fechaHora,
+                    activo = true
+                };
+
+                _context.Movimientos.Add(movimiento);
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+
             return Ok();
         }
+
 
         // DELETE: api/Movimientos/Eliminar/1
         [HttpDelete("[action]/{id}")]

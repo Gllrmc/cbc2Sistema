@@ -33,8 +33,7 @@ namespace Sistema.Web.Models.Operaciones
         public string ref7 { get; set; }
         public string ref8 { get; set; }
         public string ref9 { get; set; }
-        [Required]
-        public int etlId { get; set; }
+        public int? etlId { get; set; }
         [Required]
         public int iduseralta { get; set; }
     }

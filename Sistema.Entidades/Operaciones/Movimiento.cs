@@ -55,8 +55,7 @@ namespace Sistema.Entidades.Operaciones
         public string ref8 { get; set; }
         [Column(TypeName = "varchar(100)")]
         public string ref9 { get; set; }
-        [Required]
-        public int etlId { get; set; }
+        public int? etlId { get; set; }
         [Required]
         public int iduseralta { get; set; }
         [Required]

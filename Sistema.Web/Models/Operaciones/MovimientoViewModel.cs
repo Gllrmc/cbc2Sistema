@@ -31,7 +31,7 @@ namespace Sistema.Web.Models.Operaciones
         public string ref7 { get; set; }
         public string ref8 { get; set; }
         public string ref9 { get; set; }
-        public int etlId { get; set; }
+        public int? etlId { get; set; }
         public int iduseralta { get; set; }
         public DateTime fecalta { get; set; }
         public int iduserumod { get; set; }

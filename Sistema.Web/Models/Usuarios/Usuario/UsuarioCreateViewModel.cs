@@ -17,6 +17,8 @@ namespace Sistema.Web.Models.Usuarios.Usuario
         [Required]
         public string password { get; set; }
         [Required]
+        public bool pxch { get; set; }
+        [Required]
         public int iduseralta { get; set; }
 
     }

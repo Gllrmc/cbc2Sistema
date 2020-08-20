@@ -49,6 +49,7 @@ namespace Sistema.Web.Controllers
                 telefono = u.telefono,
                 email = u.email,
                 password_hash = u.password_hash,
+                pxch = u.pxch,
                 iduseralta = u.iduseralta,
                 fecalta = u.fecalta,
                 iduserumod = u.iduserumod,
@@ -78,6 +79,7 @@ namespace Sistema.Web.Controllers
                 telefono = u.telefono,
                 email = u.email,
                 password_hash = u.password_hash,
+                pxch = u.pxch,
                 activo = u.activo
             });
 
@@ -113,6 +115,7 @@ namespace Sistema.Web.Controllers
                 email = model.email.ToLower(),
                 password_hash = passwordHash,
                 password_salt = passwordSalt,
+                pxch = model.pxch,
                 iduseralta = model.iduseralta,
                 fecalta = fechaHora,
                 iduserumod = model.iduseralta,
@@ -162,6 +165,7 @@ namespace Sistema.Web.Controllers
             usuario.userid = model.userid;
             usuario.telefono = model.telefono;
             usuario.email = model.email.ToLower();
+            usuario.pxch = model.pxch;
             usuario.iduserumod = model.iduserumod;
             usuario.fecumod = fechaHora;
 
@@ -263,6 +267,46 @@ namespace Sistema.Web.Controllers
             return Ok();
         }
 
+        // PUT: api/Usuarios/Pxch
+        [HttpPut("[action]")]
+        public async Task<IActionResult> Pxch(PxchUpdateModel model)
+        {
+
+            var fechaHora = DateTime.Now;
+            var usuario = await _context.Usuarios
+                .FirstOrDefaultAsync(u => u.Id == model.Id);
+
+            if (usuario == null)
+            {
+                return NotFound();
+            }
+
+            if (!VerificarPasswordHash(model.oldpassword, usuario.password_hash, usuario.password_salt))
+            {
+                return NotFound();
+            }
+
+            usuario.pxch = false;
+            usuario.iduserumod = model.Id;
+            usuario.fecumod = fechaHora;
+            CrearPasswordHash(model.newpassword, out byte[] passwordHash, out byte[] passwordSalt);
+            usuario.password_hash = passwordHash;
+            usuario.password_salt = passwordSalt;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Guardar Excepción
+                return BadRequest();
+            }
+
+            return Ok();
+        }
+
+
         // PUT: api/Usuarios/Login
         [HttpPost("[action]")]
         public async Task<IActionResult> Login(LoginViewModel model)
@@ -292,7 +336,8 @@ namespace Sistema.Web.Controllers
                 new Claim(ClaimTypes.Role, usuario.rol.nombre ),
                 new Claim("idusuario", usuario.Id.ToString() ),
                 new Claim("rol", usuario.rol.nombre ),
-                new Claim("nombre", usuario.userid )
+                new Claim("nombre", usuario.userid ),
+                new Claim("pxch", usuario.pxch?"SI":"NO")
             };
 
             rolId = usuario.rol.Id;

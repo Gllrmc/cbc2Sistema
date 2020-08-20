@@ -15,6 +15,7 @@ namespace Sistema.Web.Models.Usuarios.Usuario
         public string telefono { get; set; }
         public string email { get; set; }
         public byte[] password_hash { get; set; }
+        public bool pxch { get; set; }
         public int iduseralta { get; set; }
         public DateTime fecalta { get; set; }
         public int iduserumod { get; set; }

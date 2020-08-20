@@ -135,7 +135,7 @@ namespace Sistema.Web.Controllers
             bancuenta.iduseralta = model.iduseralta;
             bancuenta.fecalta = model.fecalta;
             bancuenta.iduserumod = model.iduserumod;
-            bancuenta.fecumod = model.fecumod;
+            bancuenta.fecumod = fechaHora;
             try
             {
                 await _context.SaveChangesAsync();

@@ -10,5 +10,6 @@ namespace Sistema.Web.Models.Maestros.Grpconceptos
         public int Id { get; set; }
         public string orden { get; set; }
         public string nombre { get; set; }
+        public bool esajuape { get; set; }
     }
 }

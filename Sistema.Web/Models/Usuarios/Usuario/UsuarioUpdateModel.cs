@@ -21,6 +21,8 @@ namespace Sistema.Web.Models.Usuarios.Usuario
         public string password { get; set; }
         public bool act_password { get; set; }
         [Required]
+        public bool pxch { get; set; }
+        [Required]
         public int iduserumod { get; set; }
         [Required]
         public DateTime fecumod { get; set; }

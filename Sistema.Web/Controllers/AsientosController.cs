@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Sistema.Datos;
 using Sistema.Entidades.Operaciones;
+using Sistema.Web.Models.Operaciones;
 
 namespace Sistema.Web.Controllers
 {
@@ -23,39 +24,201 @@ namespace Sistema.Web.Controllers
             _context = context;
         }
 
-        // GET: api/Asientos
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Asiento>>> GetAsientos()
+        // GET: api/Asientos/Listar
+        [HttpGet("[action]")]
+        public async Task<IEnumerable<AsientoViewModel>> Listar()
         {
-            return await _context.Asientos.ToListAsync();
+            var asiento = await _context.Asientos
+                .Include(a => a.empresa)
+                .OrderBy(a => a.Id)
+                .ToListAsync();
+
+            return asiento.Select(a => new AsientoViewModel
+            {
+                Id = a.Id,
+                empresaId = a.empresaId,
+                empresa = a.empresa.nombre,
+                comentario = a.comentario,
+                iduseralta = a.iduseralta,
+                fecalta = a.fecalta,
+                iduserumod = a.iduserumod,
+                fecumod = a.fecumod,
+                activo = a.activo
+            });
+
         }
 
-        // GET: api/Asientos/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Asiento>> GetAsiento(int id)
+        // GET: api/Asientos/Select
+        [HttpGet("[action]")]
+        public async Task<IEnumerable<AsientoSelectModel>> Select()
         {
-            var asiento = await _context.Asientos.FindAsync(id);
+            var asiento = await _context.Asientos
+                .Include(b => b.empresa)
+                .Where(a => a.activo == true)
+                .OrderByDescending(a => a.Id)
+                .AsNoTracking()
+                .ToListAsync();
+
+            return asiento.Select(a => new AsientoSelectModel
+            {
+                Id = a.Id,
+                comentario = a.comentario,
+                empresaId = a.empresaId,
+                empresa = a.empresa.nombre
+            });
+        }
+
+        // GET: api/Asientos/Mostrar/1
+        [HttpGet("[action]/{id}")]
+        public async Task<IActionResult> Mostrar([FromRoute] int id)
+        {
+
+            var asiento = await _context.Asientos
+                .SingleOrDefaultAsync(a => a.Id == id);
 
             if (asiento == null)
             {
                 return NotFound();
             }
 
-            return asiento;
+            return Ok(new AsientoViewModel
+            {
+                Id = asiento.Id,
+                empresaId = asiento.empresaId,
+                comentario = asiento.comentario,
+                iduseralta = asiento.iduseralta,
+                fecalta = asiento.fecalta,
+                iduserumod = asiento.iduserumod,
+                fecumod = asiento.fecumod,
+                activo = asiento.activo
+            });
         }
 
-        // PUT: api/Asientos/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutAsiento(int id, Asiento asiento)
+        // PUT: api/Asientos/Actualizar
+        [HttpPut("[action]")]
+        public async Task<IActionResult> Actualizar([FromBody] AsientoUpdateModel model)
         {
-            if (id != asiento.Id)
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (model.Id <= 0)
             {
                 return BadRequest();
             }
 
-            _context.Entry(asiento).State = EntityState.Modified;
+            var fechaHora = DateTime.Now;
+            var asiento = await _context.Asientos
+                .FirstOrDefaultAsync(a => a.Id == model.Id);
+
+            if (asiento == null)
+            {
+                return NotFound();
+            }
+            asiento.empresaId = model.empresaId;
+            asiento.comentario = model.comentario;
+            asiento.iduseralta = model.iduseralta;
+            asiento.fecalta = model.fecalta;
+            asiento.iduserumod = model.iduserumod;
+            asiento.fecumod = fechaHora;
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Guardar Excepción
+                return BadRequest();
+            }
+
+            return Ok();
+        }
+
+        // POST: api/Asientos/Crear
+        [HttpPost("[action]")]
+        public async Task<IActionResult> Crear([FromBody] AsientoCreateModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var fechaHora = DateTime.Now;
+            Asiento asiento = new Asiento
+            {
+                empresaId = model.empresaId,
+                comentario = model.comentario,
+                iduseralta = model.iduseralta,
+                fecalta = fechaHora,
+                iduserumod = model.iduseralta,
+                fecumod = fechaHora,
+                activo = true
+            };
+
+            _context.Asientos.Add(asiento);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+
+            return Ok(asiento.Id);
+        }
+
+        // DELETE: api/Asientos/Eliminar/1
+        [HttpDelete("[action]/{id}")]
+        public async Task<IActionResult> Eliminar([FromRoute] int id)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var asiento = await _context.Asientos
+                .FindAsync(id);
+
+            if (asiento == null)
+            {
+                return NotFound();
+            }
+
+            _context.Asientos.Remove(asiento);
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
+
+            return Ok(asiento);
+        }
+
+        // PUT: api/Asientos/Desactivar/1
+        [HttpPut("[action]/{id}")]
+        public async Task<IActionResult> Desactivar([FromRoute] int id)
+        {
+
+            if (id <= 0)
+            {
+                return BadRequest();
+            }
+
+            var asiento = await _context
+                .Asientos
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (asiento == null)
+            {
+                return NotFound();
+            }
+
+            asiento.activo = false;
 
             try
             {
@@ -63,45 +226,45 @@ namespace Sistema.Web.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!AsientoExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                // Guardar Excepción
+                return BadRequest();
             }
 
-            return NoContent();
+            return Ok();
         }
 
-        // POST: api/Asientos
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPost]
-        public async Task<ActionResult<Asiento>> PostAsiento(Asiento asiento)
+        // PUT: api/Asientos/Activar/1
+        [HttpPut("[action]/{id}")]
+        public async Task<IActionResult> Activar([FromRoute] int id)
         {
-            _context.Asientos.Add(asiento);
-            await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetAsiento", new { id = asiento.Id }, asiento);
-        }
+            if (id <= 0)
+            {
+                return BadRequest();
+            }
 
-        // DELETE: api/Asientos/5
-        [HttpDelete("{id}")]
-        public async Task<ActionResult<Asiento>> DeleteAsiento(int id)
-        {
-            var asiento = await _context.Asientos.FindAsync(id);
+            var asiento = await _context
+                .Asientos
+                .FirstOrDefaultAsync(c => c.Id == id);
+
             if (asiento == null)
             {
                 return NotFound();
             }
 
-            _context.Asientos.Remove(asiento);
-            await _context.SaveChangesAsync();
+            asiento.activo = true;
 
-            return asiento;
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Guardar Excepción
+                return BadRequest();
+            }
+
+            return Ok();
         }
 
         private bool AsientoExists(int id)

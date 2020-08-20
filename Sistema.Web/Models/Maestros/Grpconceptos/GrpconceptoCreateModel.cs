@@ -15,6 +15,8 @@ namespace Sistema.Web.Models.Maestros.Grpconceptos
         [Required]
         public string nombre { get; set; }
         [Required]
+        public bool esajuape { get; set; }
+        [Required]
         public int iduseralta { get; set; }
         [Required]
         public DateTime fecalta { get; set; }
