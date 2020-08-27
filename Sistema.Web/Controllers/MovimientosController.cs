@@ -14,7 +14,7 @@ using Sistema.Web.Models.Operaciones;
 
 namespace Sistema.Web.Controllers
 {
-    //[Authorize(Roles = "Administrador,JefeAdministracion,AsistAdministracion")]
+    [Authorize(Roles = "Administrador,JefeAdministracion,AsistAdministracion")]
     [Route("api/[controller]")]
     [ApiController]
     public class MovimientosController : ControllerBase
