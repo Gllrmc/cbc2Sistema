@@ -169,6 +169,88 @@ namespace Sistema.Web.Controllers
             });
         }
 
+        // GET: api/Movimientos/Consultacuadrada/2020/8
+        [HttpGet("[action]/{anio}/{mes}")]
+        public async Task<IActionResult> Consultacuadrada([FromRoute] string stranio, string strmes)
+        {
+            int anio = Int32.Parse(stranio);
+            int mes = Int32.Parse(strmes);
+            int aniomesencurso = anio * 100 + mes ;
+            decimal[,] cuadro = new decimal[3, 3];
+            cuadro[0, 0] = 0;
+            cuadro[0, 1] = 0; 
+            cuadro[0, 2] = 0;
+            cuadro[1, 0] = 0;
+            cuadro[1, 1] = 0;
+            cuadro[1, 2] = 0;
+            cuadro[2, 0] = 0;
+            cuadro[2, 1] = 0;
+            cuadro[2, 2] = 0;
+
+
+            // buscar el registro de lote.
+            var lote = await _context.Lotes
+                .FirstOrDefaultAsync(a => (int.Parse(a.anio) * 100 + int.Parse(a.mes)) == aniomesencurso);
+
+            // Saldo inicial contable correspondiente al lote seleccionado
+            cuadro[0, 0] = lote.consalini;
+
+            // movimientos contables del mes en curso  ver como se manejaran los ajustes que modifican saldo.
+            cuadro[0, 1] = await _context.Movimientos
+                .Include(a => a.lote)
+                .Where(a => (int.Parse(a.lote.anio) * 100 + int.Parse(a.lote.mes)) == aniomesencurso && ( a.origen == "CON" || a.origen == "AJU" ) ) 
+                .SumAsync(a => a.importe);
+
+            // Saldo final contable correspondiente al lote seleccionado
+            cuadro[0, 2] = lote.consalfin;
+
+            //movimientos contables pendientes al inicio
+            cuadro[1, 0] = await _context.Movimientos
+                .Include(a => a.lote)
+                .Where(a => (int.Parse(a.lote.anio) * 100 + int.Parse(a.lote.mes)) < aniomesencurso && a.asientoId == null)
+                .SumAsync(a => a.importe);
+
+            // todos los movimientos (contables, banco, aperturas, ajustes)
+            cuadro[1, 1] = await _context.Movimientos
+                .Include(a => a.lote)
+                .Where(a => (int.Parse(a.lote.anio) * 100 + int.Parse(a.lote.mes)) == aniomesencurso)
+                .SumAsync(a => a.importe);
+
+            //movimientos contables pendientes al fin
+            cuadro[1, 2] = await _context.Movimientos
+                .Include(a => a.lote)
+                .Where(a => (int.Parse(a.lote.anio) * 100 + int.Parse(a.lote.mes)) <= aniomesencurso && a.asientoId == null)
+                .SumAsync(a => a.importe);
+
+            // Saldo inicial banco correspondiente al lote seleccionado
+            cuadro[2, 1] = lote.bansalini;
+
+            //movimientos de banco del mes en curso
+            cuadro[2, 1] = await _context.Movimientos
+                .Include(a => a.lote)
+                .Where(a => (int.Parse(a.lote.anio) * 100 + int.Parse(a.lote.mes)) == aniomesencurso && a.origen == "BAN")
+                .SumAsync(a => a.importe);
+
+            // Saldo final banco correspondiente al lote seleccionado
+            cuadro[2, 2] = lote.bansalfin;
+
+            return Ok(new CuadroViewModel
+            {
+                anio = anio,
+                mes = mes,
+                contaSI = cuadro[0,0],
+                contaMO = cuadro[0,1],
+                contaSF = cuadro[0,2],
+                partiSI = cuadro[1,0],
+                partiMO = cuadro[1,1],
+                partiSF = cuadro[1,2],
+                bancoSI = cuadro[2,0],
+                bancoMO = cuadro[2,1],
+                bancoSF = cuadro[2,2]
+            });
+        }
+
+
         // GET: api/Movimientos/Listarheader
         [HttpGet("[action]")]
         public async Task<IEnumerable<HeadermovViewModel>> Listarheader()
