@@ -7,8 +7,8 @@ namespace Sistema.Web.Models.Operaciones
 {
     public class CuadroViewModel
     {
-        public int anio { get; set; }
-        public int mes { get; set; }
+        public string anio { get; set; }
+        public string mes { get; set; }
         public decimal contaSI { get; set; }
         public decimal contaMO { get; set; }
         public decimal contaSF { get; set; }

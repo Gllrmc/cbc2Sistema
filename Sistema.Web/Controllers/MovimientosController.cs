@@ -14,7 +14,7 @@ using Sistema.Web.Models.Operaciones;
 
 namespace Sistema.Web.Controllers
 {
-    [Authorize(Roles = "Administrador,JefeAdministracion,AsistAdministracion")]
+    //[Authorize(Roles = "Administrador,JefeAdministracion,AsistAdministracion")]
     [Route("api/[controller]")]
     [ApiController]
     public class MovimientosController : ControllerBase
@@ -169,28 +169,27 @@ namespace Sistema.Web.Controllers
             });
         }
 
-        // GET: api/Movimientos/Consultacuadrada/2020/8
-        [HttpGet("[action]/{anio}/{mes}")]
+        // GET: api/Movimientos/Consultacuadrada/2020/05
+        [HttpGet("[action]/{stranio}/{strmes}")]
         public async Task<IActionResult> Consultacuadrada([FromRoute] string stranio, string strmes)
         {
-            int anio = Int32.Parse(stranio);
-            int mes = Int32.Parse(strmes);
-            int aniomesencurso = anio * 100 + mes ;
-            decimal[,] cuadro = new decimal[3, 3];
-            cuadro[0, 0] = 0;
-            cuadro[0, 1] = 0; 
-            cuadro[0, 2] = 0;
-            cuadro[1, 0] = 0;
-            cuadro[1, 1] = 0;
-            cuadro[1, 2] = 0;
-            cuadro[2, 0] = 0;
-            cuadro[2, 1] = 0;
-            cuadro[2, 2] = 0;
+            
+            int anio = int.Parse(stranio);
+            int mes = int.Parse(strmes);
+            DateTime fechasta = new DateTime(anio, mes, DateTime.DaysInMonth(anio,mes), 0, 0, 0).AddDays(1);
+            string strendanio = fechasta.ToString("yyyy");
+            string strendmes = fechasta.ToString("MM");
 
+            decimal[,] cuadro = new decimal[3, 3] { { 0, 0, 0}, { 0, 0, 0 }, { 0, 0, 0 } };
 
             // buscar el registro de lote.
             var lote = await _context.Lotes
-                .FirstOrDefaultAsync(a => (int.Parse(a.anio) * 100 + int.Parse(a.mes)) == aniomesencurso);
+                .FirstOrDefaultAsync(a => a.anio == stranio && a.mes == strmes);
+
+            if (lote == null)
+            {
+                return NotFound();
+            }
 
             // Saldo inicial contable correspondiente al lote seleccionado
             cuadro[0, 0] = lote.consalini;
@@ -198,7 +197,7 @@ namespace Sistema.Web.Controllers
             // movimientos contables del mes en curso  ver como se manejaran los ajustes que modifican saldo.
             cuadro[0, 1] = await _context.Movimientos
                 .Include(a => a.lote)
-                .Where(a => (int.Parse(a.lote.anio) * 100 + int.Parse(a.lote.mes)) == aniomesencurso && ( a.origen == "CON" || a.origen == "AJU" ) ) 
+                .Where(a => a.lote.anio == stranio && a.lote.mes == strmes && ( a.origen == "CON" || a.origen == "AJU" ) ) 
                 .SumAsync(a => a.importe);
 
             // Saldo final contable correspondiente al lote seleccionado
@@ -207,28 +206,28 @@ namespace Sistema.Web.Controllers
             //movimientos contables pendientes al inicio
             cuadro[1, 0] = await _context.Movimientos
                 .Include(a => a.lote)
-                .Where(a => (int.Parse(a.lote.anio) * 100 + int.Parse(a.lote.mes)) < aniomesencurso && a.asientoId == null)
+                .Where(a => Convert.ToInt32(a.lote.anio + a.lote.mes) < Convert.ToInt32(stranio + strmes) && !a.asientoId.HasValue)
                 .SumAsync(a => a.importe);
 
             // todos los movimientos (contables, banco, aperturas, ajustes)
             cuadro[1, 1] = await _context.Movimientos
                 .Include(a => a.lote)
-                .Where(a => (int.Parse(a.lote.anio) * 100 + int.Parse(a.lote.mes)) == aniomesencurso)
+                .Where(a => a.lote.anio == stranio && a.lote.mes == strmes)
                 .SumAsync(a => a.importe);
 
             //movimientos contables pendientes al fin
             cuadro[1, 2] = await _context.Movimientos
                 .Include(a => a.lote)
-                .Where(a => (int.Parse(a.lote.anio) * 100 + int.Parse(a.lote.mes)) <= aniomesencurso && a.asientoId == null)
+                .Where(a => Convert.ToInt32(a.lote.anio + a.lote.mes) < Convert.ToInt32(strendanio + strendmes) && !a.asientoId.HasValue)
                 .SumAsync(a => a.importe);
 
             // Saldo inicial banco correspondiente al lote seleccionado
-            cuadro[2, 1] = lote.bansalini;
+            cuadro[2, 0] = lote.bansalini;
 
             //movimientos de banco del mes en curso
             cuadro[2, 1] = await _context.Movimientos
                 .Include(a => a.lote)
-                .Where(a => (int.Parse(a.lote.anio) * 100 + int.Parse(a.lote.mes)) == aniomesencurso && a.origen == "BAN")
+                .Where(a => a.lote.anio == stranio && a.lote.mes == strmes && a.origen == "BAN")
                 .SumAsync(a => a.importe);
 
             // Saldo final banco correspondiente al lote seleccionado
@@ -236,8 +235,8 @@ namespace Sistema.Web.Controllers
 
             return Ok(new CuadroViewModel
             {
-                anio = anio,
-                mes = mes,
+                anio = stranio,
+                mes = strmes,
                 contaSI = cuadro[0,0],
                 contaMO = cuadro[0,1],
                 contaSF = cuadro[0,2],
