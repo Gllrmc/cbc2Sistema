@@ -15,6 +15,7 @@ namespace Sistema.Web.Models.Operaciones
         public string asocuenta { get; set; }
         public string anio { get; set; }
         public string mes { get; set; }
+        public string aniomes { get; set; }
         public decimal bansalini { get; set; }
         public decimal bansalfin { get; set; }
         public decimal consalini { get; set; }

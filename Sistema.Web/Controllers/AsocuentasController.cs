@@ -62,7 +62,9 @@ namespace Sistema.Web.Controllers
         {
             var asocuenta = await _context.Asocuentas
                 .Include(b => b.bancuenta)
+                .ThenInclude(b => b.banco)
                 .Include(b => b.concuenta)
+                .Include(b => b.empresa)
                 .Where(a => a.activo == true)
                 .OrderBy(a => a.orden)
                 .AsNoTracking()
